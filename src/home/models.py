@@ -11,8 +11,7 @@ class Pagina(models.Model):
     def __unicode__(self):
     	return u'%s' % self.asunto
     
-    def emails(self):
-        print self.mails.split(',')
+    def emails(self):        
         return self.mails.split(',')
 
     class Meta:
@@ -30,3 +29,7 @@ class Persona(models.Model):
     class Meta:
         verbose_name = 'Destinatario'
         verbose_name_plural = 'Destinatarios'
+
+class ArchivoAdjunto(models.Model):
+    archivo = models.FileField(upload_to='adjuntos')
+    mensaje = models.ForeignKey(Pagina, related_name='archivos')

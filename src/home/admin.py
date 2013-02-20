@@ -1,28 +1,40 @@
 # -*- coding: utf-8 -*-
 from django.contrib import admin
-from models import Pagina, Persona
+from models import Pagina, Persona, ArchivoAdjunto
 from django.core.mail import EmailMessage 
+
+class AdminArchivoAdjunto(admin.StackedInline):
+    model = ArchivoAdjunto
+    extra = 0
 
 class PaginaAdmin(admin.ModelAdmin):
     list_display = ('codigo','asunto','creador',)
     list_display_links = ('codigo','asunto',)
     exclude = ['creador']
+    inlines = [
+        AdminArchivoAdjunto,
+    ]
 
     class Media:        
         js = ("grappelli/tinymce/jscripts/tiny_mce/tiny_mce.js",
         	#"grappelli/tinymce_setup/tinymce_setup.js")
         	"js/jscontenido.js")
 
-    def save_model(self, request, obj, form, change):
-        obj.creador = request.user
+    def save_related(self, request, form, formsets, change):        
+        super(PaginaAdmin,self).save_related(request,form, formsets, change)        
         mails = Persona.objects.values_list('email', flat=True).order_by('email')
-        email = EmailMessage(subject=obj.asunto,
-            body=obj.contenido,
+        email = EmailMessage(subject=self.obj.asunto,
+            body=self.obj.contenido,
             bcc=mails,)
-            #headers = {'Reply-To': 'portalpresidenciaperu@gmail.com'})
+        for archivo in self.obj.archivos.all():
+            email.attach_file(archivo.archivo.path)
         email.content_subtype = "html"
         email.send()
-        obj.save()
+
+    def save_model(self, request, obj, form, change):        
+        obj.creador = request.user        
+        obj.save()    
+        self.obj = obj
 
 class PersonaAdmin(admin.ModelAdmin):
     list_display = ('codigo','nombres','email',)
